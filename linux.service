@@ -1,0 +1,14 @@
+[Unit]
+Description=Chrome Remote Desktop Display Guard
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/crd-display-guard.sh
+Restart=always
+RestartSec=10
+Nice=10
+CPUQuota=1%
+
+[Install]
+WantedBy=multi-user.target

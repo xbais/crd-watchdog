@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Chrome Remote Desktop service name
-CRD_SERVICE="chrome-remote-desktop.service"
+# Chrome Remote Desktop service base name
+CRD_BASE="chrome-remote-desktop"
 
 # Check interval (seconds)
 INTERVAL=120
@@ -17,21 +17,42 @@ display_connected() {
     return 1
 }
 
-# Function: is CRD running?
-crd_active() {
-    systemctl is-active --quiet "$CRD_SERVICE"
+# Function: get all CRD service units (main + @instances)
+get_crd_units() {
+    systemctl list-unit-files \
+        | awk '{print $1}' \
+        | grep -E "^${CRD_BASE}(@.*)?\.service$"
+}
+
+# Function: stop all CRD units
+stop_crd() {
+    units=$(get_crd_units)
+    [[ -n "$units" ]] && systemctl stop $units
+}
+
+# Function: start all CRD units
+start_crd() {
+    units=$(get_crd_units)
+    [[ -n "$units" ]] && systemctl start $units
+}
+
+# Function: check if any CRD unit is active
+any_crd_active() {
+    systemctl is-active --quiet "${CRD_BASE}.service" && return 0
+    systemctl list-units --type=service --state=active \
+        | grep -qE "^${CRD_BASE}@.*\.service"
 }
 
 while true; do
     if display_connected; then
-        # Display is connected → stop CRD if running
-        if crd_active; then
-            systemctl stop "$CRD_SERVICE"
+        # Display connected → stop all CRD instances
+        if any_crd_active; then
+            stop_crd
         fi
     else
-        # No display → start CRD if not running
-        if ! crd_active; then
-            systemctl start "$CRD_SERVICE"
+        # No display → start all CRD instances
+        if ! any_crd_active; then
+            start_crd
         fi
     fi
 

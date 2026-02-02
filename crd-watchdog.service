@@ -4,6 +4,8 @@ After=multi-user.target
 
 [Service]
 Type=simple
+User=root
+Group=root
 ExecStart=/usr/local/bin/crd-watchdog.sh
 Restart=always
 RestartSec=10
